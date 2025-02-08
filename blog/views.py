@@ -128,7 +128,11 @@ def tag_filter(request, tag_title):
     popular_tags = sorted(all_tags, key=get_related_posts_count)
     most_popular_tags = popular_tags[-5:]
 
-    most_popular_posts = []  # TODO. Как это посчитать?
+    most_popular_posts = (
+        Post.objects
+        .annotate(like_count=Count('likes'), comments_count=Count('comments'))
+        .order_by('-like_count')[:5]
+    )  # TODO. Как это посчитать?
 
     related_posts = tag.posts.all()[:20]
 
