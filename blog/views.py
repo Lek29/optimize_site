@@ -47,28 +47,44 @@ def serialize_post_optimized(post):
 
 
 def index(request):
-    all_posts = (
+    most_popular_posts = (
         Post.objects
         .select_related('author')
         .prefetch_related('tags')
         .annotate(
-            like_count=Count('likes',distinct=True),
-            comments_count=Count('comments', distinct=True))
+            like_count=Count('likes',distinct=True)).order_by('-like_count')[:5]
     )
-    sorted_posts = all_posts.order_by('-like_count')
-    most_popular_posts = sorted_posts[:5]
 
-    most_fresh_posts = all_posts.order_by('-published_at')[:5]
+    most_popular_post_id = [post.id for post in most_popular_posts]
+    post_with_comments = (
+        Post.objects
+        .filter(id__in=most_popular_post_id)
+        .annotate(comments_count=Count('comments', distinct=True))
+    )
+    ids_and_comments = post_with_comments.values_list('id', 'comments_count')
+    count_for_id = dict(ids_and_comments)
 
-    all_tags = Tag.objects.annotate(posts_count=Count('posts'))
-    sorted_tags = all_tags.order_by('-posts_count')
-    most_popular_tags = sorted_tags[:5]
+    for post in most_popular_posts:
+        post.comments_count = count_for_id.get(post.id, 0)
+
+    most_fresh_posts = (
+        Post.objects
+        .select_related('author')
+        .prefetch_related('tags')
+        .annotate(comments_count=Count('comments', distinct=True))
+        .order_by('-published_at')[:5]
+    )
+    most_popular_tags =(
+        Tag.objects
+        .annotate(posts_count=Count('posts'))
+        .order_by('-posts_count')[:5]
+    )
 
     context = {
         'most_popular_posts': [
             serialize_post_optimized(post) for post in most_popular_posts
         ],
-        'page_posts': [serialize_post(post) for post in most_fresh_posts],
+        # 'page_posts': [serialize_post(post) for post in most_fresh_posts],
         'page_posts': [serialize_post_optimized(post) for post in most_fresh_posts],
         'popular_tags': [serialize_tag(tag) for tag in most_popular_tags],
 
