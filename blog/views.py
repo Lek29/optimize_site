@@ -27,7 +27,8 @@ def serialize_post(post):
 def serialize_tag(tag):
     return {
         'title': tag.title,
-        'posts_with_tag': len(Post.objects.filter(tags=tag)),
+        # 'posts_with_tag': len(Post.objects.filter(tags=tag))
+        'posts_with_tag': tag.posts.count(),
     }
 
 
@@ -51,14 +52,13 @@ def index(request):
         .select_related('author')
         .prefetch_related('tags')
         .annotate(
-            like_count=Count('likes'),
-            comments_count=Count('comments'))
+            like_count=Count('likes',distinct=True),
+            comments_count=Count('comments', distinct=True))
     )
     sorted_posts = all_posts.order_by('-like_count')
     most_popular_posts = sorted_posts[:5]
 
-    fresh_posts = Post.objects.order_by('-published_at')
-    most_fresh_posts = list(fresh_posts)[:5]
+    most_fresh_posts = all_posts.order_by('-published_at')[:5]
 
     all_tags = Tag.objects.annotate(posts_count=Count('posts'))
     sorted_tags = all_tags.order_by('-posts_count')
@@ -69,7 +69,9 @@ def index(request):
             serialize_post_optimized(post) for post in most_popular_posts
         ],
         'page_posts': [serialize_post(post) for post in most_fresh_posts],
+        'page_posts': [serialize_post_optimized(post) for post in most_fresh_posts],
         'popular_tags': [serialize_tag(tag) for tag in most_popular_tags],
+
     }
     return render(request, 'index.html', context)
 
@@ -109,7 +111,9 @@ def post_detail(request, slug):
         Post.objects
         .annotate(like_count=Count('likes'), comments_count=Count('comments'))
         .order_by('-like_count')[:5]
-    )  # TODO. Как это посчитать?
+    )  #TODO. Как это посчитать?
+
+
 
     context = {
         'post': serialized_post,
@@ -128,11 +132,17 @@ def tag_filter(request, tag_title):
     popular_tags = sorted(all_tags, key=get_related_posts_count)
     most_popular_tags = popular_tags[-5:]
 
-    most_popular_posts = (
+    # most_popular_posts = (
+    #     Post.objects
+    #     .annotate(like_count=Count('likes'), comments_count=Count('comments'))
+    #     .order_by('-like_count')[:5]
+    # )  # TODO. Как это посчитать?
+
+    most_popular_posts = list(  # [ИСПРАВЛЕНО]
         Post.objects
-        .annotate(like_count=Count('likes'), comments_count=Count('comments'))
+        .annotate(like_count=Count('likes'))
         .order_by('-like_count')[:5]
-    )  # TODO. Как это посчитать?
+    )
 
     related_posts = tag.posts.all()[:20]
 
