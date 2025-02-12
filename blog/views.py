@@ -27,7 +27,6 @@ def serialize_post(post):
 def serialize_tag(tag):
     return {
         'title': tag.title,
-        # 'posts_with_tag': len(Post.objects.filter(tags=tag))
         'posts_with_tag': tag.posts.count(),
     }
 
@@ -49,21 +48,9 @@ def serialize_post_optimized(post):
 def index(request):
     most_popular_posts = (
         Post.objects.popular()
-        .prefetch_related('author')[:5]
-        .fetch_with_comments_count()
+        .prefetch_related('author', 'tags')
+        .fetch_with_comments_count()[:5]
     )
-
-    # most_popular_post_id = [post.id for post in most_popular_posts]
-    # post_with_comments = (
-    #     Post.objects
-    #     .filter(id__in=most_popular_post_id)
-    #     .annotate(comments_count=Count('comments', distinct=True))
-    # )
-    # ids_and_comments = post_with_comments.values_list('id', 'comments_count')
-    # count_for_id = dict(ids_and_comments)
-    #
-    # for post in most_popular_posts:
-    #     post.comments_count = count_for_id.get(post.id, 0)
 
     most_fresh_posts = (
         Post.objects
@@ -143,13 +130,7 @@ def tag_filter(request, tag_title):
     popular_tags = sorted(all_tags, key=get_related_posts_count)
     most_popular_tags = popular_tags[-5:]
 
-    # most_popular_posts = (
-    #     Post.objects
-    #     .annotate(like_count=Count('likes'), comments_count=Count('comments'))
-    #     .order_by('-like_count')[:5]
-    # )  # TODO. Как это посчитать?
-
-    most_popular_posts = list(  # [ИСПРАВЛЕНО]
+    most_popular_posts = list(
         Post.objects
         .annotate(like_count=Count('likes'))
         .order_by('-like_count')[:5]
