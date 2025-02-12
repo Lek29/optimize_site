@@ -173,11 +173,39 @@
                     {% endfor %}
                   </ul>
                 </div>
+
+                <div class="col-lg-4 sidebar-widgets">
+                  <div class="widget-wrap">
+                    <div class="single-sidebar-widget popular-posts-widget">
+                      <h4 class="single-sidebar-widget__title">Popular Posts</h4>
+                      <ul class="popular-posts-list">
+                        {% for post in most_popular_posts %}
+                          <li>
+                            <a href="{% url 'post_detail' post.slug %}">
+                              <div class="popular-post-item d-flex">
+                                <div class="thumb">
+                                  {% if post.image_url %}
+                                      <img src="{{ post.image_url }}" alt="" class="img-fluid">
+                                  {% else %}
+                                      <img src="{% static 'img/banner/forest.png' %}" alt="" class="img-fluid">
+                                  {% endif %}
+
+                                </div>
+                                <div class="details">
+                                  <h6>{{ post.title }}</h6>
+                                  <p>{{ post.published_at|date:'Y-m-d' }}</p>
+                                </div>
+                              </div>
+                            </a>
+                          </li>
+                        {% endfor %}
+                      </ul>
                 </div>
-              </div>
+                </div>
             </div>
           <!-- End Blog Post Siddebar -->
         </div>
+
     </section>
     <!--================ End Blog Post Area =================-->
   </main>
