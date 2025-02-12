@@ -74,11 +74,8 @@ def index(request):
         .annotate(comments_count=Count('comments', distinct=True))
         .order_by('-published_at')[:5]
     )
-    most_popular_tags =(
-        Tag.objects
-        .annotate(posts_count=Count('posts'))
-        .order_by('-posts_count')[:5]
-    )
+    most_popular_tags = Tag.objects.popular()[:5]
+
 
     context = {
         'most_popular_posts': [
