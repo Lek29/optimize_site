@@ -88,7 +88,9 @@ def index(request):
 
 def post_detail(request, slug):
     post = Post.objects.get(slug=slug)
-    comments = Comment.objects.filter(post=post)
+
+    comments = Comment.objects.filter(post=post).select_related('author')
+
     serialized_comments = []
     for comment in comments:
         serialized_comments.append({
@@ -115,19 +117,30 @@ def post_detail(request, slug):
 
     most_popular_tags = Tag.objects.popular()
 
-    most_popular_posts = (
-        Post.objects
-        .annotate(like_count=Count('likes'), comments_count=Count('comments'))
-        .order_by('-like_count')[:5]
-    )  #TODO. Как это посчитать?
 
+    popular_posts_with_likes = (
+        Post.objects.annotate(like_count=Count('likes', distinct=True))
+        .order_by('-like_count')[:5]
+    )
+
+
+    post_ids = [post.id for post in popular_posts_with_likes]
+    posts_with_comments = (
+        Post.objects.filter(id__in=post_ids)
+        .annotate(comments_count=Count('comments', distinct=True))
+    )
+
+    comments_count_map = {post.id: post.comments_count for post in posts_with_comments}
+
+    for post in popular_posts_with_likes:
+        post.comments_count = comments_count_map.get(post.id, 0)
 
 
     context = {
         'post': serialized_post,
         'popular_tags': [serialize_tag(tag) for tag in most_popular_tags],
         'most_popular_posts': [
-            serialize_post_optimized(post) for post in most_popular_posts
+            serialize_post_optimized(post) for post in popular_posts_with_likes
         ],
     }
     return render(request, 'post-details.html', context)
