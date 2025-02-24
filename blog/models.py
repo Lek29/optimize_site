@@ -10,7 +10,7 @@ class PostQuerySet(models.QuerySet):
         return posts_at_year
 
     def popular(self):
-        return self.annotate(like_count=Count('likes', distinct=True)).order_by('-like_count')
+        return self.annotate(like_count=Count('likes', distinct=False)).order_by('-like_count')
 
     def fetch_with_comments_count(self):
         """
@@ -18,21 +18,27 @@ class PostQuerySet(models.QuerySet):
         - Мы выполняем один запрос для всех постов, а не для каждого по отдельности.
         - Результат преобразуется в список, что удобно для использования в шаблонах.
         """
-        # post_ids = self.values_list('id', flat=True)
-        # post_with_comments = (
-        #     Post.objects.filter(id__in=post_ids)
-        #     .annotate(comments_count=Count('comments', distinct=True))
-        # )
-        # ids_and_comments = post_with_comments.values_list('id', 'comments_count')
-        # count_for_id = dict(ids_and_comments)
-        #
-        # posts = list(self)
-        # for post in posts:
-        #     post.comments_count = count_for_id.get(post.id, 0)
-        #
-        # return posts
-        # posts = Post.objects.filter(id__in=self).annotate(comments_count=Count('comments'))
-        posts = self.annotate(comments_count=Count('comments', distinct=True))
+
+        posts = list(self)  # Преобразование QuerySet в список
+
+        # Извлекаем идентификаторы постов
+        post_ids = [post.id for post in posts]
+
+        # Выполняем запрос для получения количества комментариев для всех постов
+        comments_counts = (
+            Post.objects
+            .filter(id__in=post_ids)
+            .annotate(comments_count=Count('comments'))
+            .values('id', 'comments_count')
+        )
+
+        # Создаем словарь для быстрого доступа к количествам комментариев по ID
+        count_for_id = {item['id']: item['comments_count'] for item in comments_counts}
+
+        # Добавляем информацию о комментариях к каждому посту
+        for post in posts:
+            post.comments_count = count_for_id.get(post.id, 0)
+
         return posts
 
     def fresh(self):

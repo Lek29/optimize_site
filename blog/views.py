@@ -88,7 +88,7 @@ def index(request):
                 to_attr='annotated_tags'
             ),
         )
-        .annotate(comments_count=Count('comments', distinct=True))[:5]
+        .annotate(comments_count=Count('comments', distinct=False))[:5]
     )
 
 
@@ -137,7 +137,7 @@ def post_detail(request, slug):
     most_popular_tags = Tag.objects.annotate(posts_count=Count('posts')).popular()
 
     popular_posts_with_likes = (
-        Post.objects.annotate(like_count=Count('likes', distinct=True))
+        Post.objects.annotate(like_count=Count('likes', distinct=False))
         .order_by('-like_count')[:5]
     )
 
@@ -145,7 +145,7 @@ def post_detail(request, slug):
     post_ids = [post.id for post in popular_posts_with_likes]
     posts_with_comments = (
         Post.objects.filter(id__in=post_ids)
-        .annotate(comments_count=Count('comments', distinct=True))
+        .annotate(comments_count=Count('comments', distinct=False))
     )
 
     comments_count_map = {post.id: post.comments_count for post in posts_with_comments}
@@ -178,13 +178,28 @@ def tag_filter(request, tag_title):
     most_popular_tags = Tag.objects.popular()
 
 
-    most_popular_posts = (
-        Post.objects
-        .annotate(like_count=Count('likes'))
-        .annotate(comments_count=Count('comments'))
-        .order_by('-like_count')[:5]
+    # most_popular_posts = (
+    #     Post.objects
+    #     .annotate(like_count=Count('likes'))
+    #     .annotate(comments_count=Count('comments'))
+    #     .order_by('-like_count')[:5]
+    #
+    # )
 
+
+    most_popular_posts_with_likes = (
+        Post.objects.annotate(like_count=Count('likes', distinct=False))
+        .order_by('-like_count')[:5]
     )
+    post_ids = [post.id for post in most_popular_posts_with_likes]
+    posts_with_comments = (
+        Post.objects.filter(id__in=post_ids)
+        .annotate(comments_count=Count('comments', distinct=False))
+    )
+    comments_count_map = {post.id: post.comments_count for post in posts_with_comments}
+
+    for post in most_popular_posts_with_likes:
+        post.comments_count = comments_count_map.get(post.id, 0)
 
 
     related_posts = (
@@ -204,7 +219,7 @@ def tag_filter(request, tag_title):
         'popular_tags': [serialize_tag(tag) for tag in most_popular_tags],
         'posts': [serialize_post_optimized(post) for post in related_posts],
         'most_popular_posts': [
-            serialize_post_optimized(post) for post in most_popular_posts
+            serialize_post_optimized(post) for post in most_popular_posts_with_likes
         ],
     }
     return render(request, 'posts-list.html', context)
