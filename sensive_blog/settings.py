@@ -102,3 +102,31 @@ MEDIA_URL = '/media/'
 DEBUG_TOOLBAR_CONFIG = {
     'SHOW_TOOLBAR_CALLBACK': lambda request: True,
 }
+
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'handlers': {
+        'console': {
+            'level': 'DEBUG',  # Уровень логирования (DEBUG, INFO, WARNING, ERROR, CRITICAL)
+            'class': 'logging.StreamHandler',  # Вывод в консоль
+        },
+        'file': {
+            'level': 'DEBUG',
+            'class': 'logging.FileHandler',  # Вывод в файл
+            'filename': 'debug.log',  # Имя файла для логов
+        },
+    },
+    'loggers': {
+        '': {  # Корневой логгер (все логи)
+            'handlers': ['console', 'file'],
+            'level': 'DEBUG',
+            'propagate': True,
+        },
+        'blog.views': {  # Логгер для вашего приложения
+            'handlers': ['console', 'file'],
+            'level': 'DEBUG',
+            'propagate': False,
+        },
+    },
+}

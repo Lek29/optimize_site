@@ -18,18 +18,21 @@ class PostQuerySet(models.QuerySet):
         - Мы выполняем один запрос для всех постов, а не для каждого по отдельности.
         - Результат преобразуется в список, что удобно для использования в шаблонах.
         """
-        post_ids = self.values_list('id', flat=True)
-        post_with_comments = (
-            Post.objects.filter(id__in=post_ids)
-            .annotate(comments_count=Count('comments', distinct=True))
-        )
-        ids_and_comments = post_with_comments.values_list('id', 'comments_count')
-        count_for_id = dict(ids_and_comments)
-
-        posts = list(self)
-        for post in posts:
-            post.comments_count = count_for_id.get('id', 0)
-
+        # post_ids = self.values_list('id', flat=True)
+        # post_with_comments = (
+        #     Post.objects.filter(id__in=post_ids)
+        #     .annotate(comments_count=Count('comments', distinct=True))
+        # )
+        # ids_and_comments = post_with_comments.values_list('id', 'comments_count')
+        # count_for_id = dict(ids_and_comments)
+        #
+        # posts = list(self)
+        # for post in posts:
+        #     post.comments_count = count_for_id.get(post.id, 0)
+        #
+        # return posts
+        # posts = Post.objects.filter(id__in=self).annotate(comments_count=Count('comments'))
+        posts = self.annotate(comments_count=Count('comments', distinct=True))
         return posts
 
     def fresh(self):
@@ -54,7 +57,7 @@ class Post(models.Model):
     text = models.TextField('Текст')
     slug = models.SlugField('Название в виде url', max_length=200)
     image = models.ImageField('Картинка')
-    published_at = models.DateTimeField('Дата и время публикации')
+    published_at = models.DateTimeField('Дата и время публикации', db_index=True)
     objects = PostQuerySet.as_manager()
 
     author = models.ForeignKey(
