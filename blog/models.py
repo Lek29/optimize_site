@@ -33,7 +33,6 @@ class PostQuerySet(models.QuerySet):
 
         for post in posts:
             post.comments_count = count_for_id.get(post.id, 0)
-
         return posts
 
     def fresh(self):
