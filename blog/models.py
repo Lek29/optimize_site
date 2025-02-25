@@ -18,13 +18,10 @@ class PostQuerySet(models.QuerySet):
         - Мы выполняем один запрос для всех постов, а не для каждого по отдельности.
         - Результат преобразуется в список, что удобно для использования в шаблонах.
         """
+        posts = list(self)
 
-        posts = list(self)  # Преобразование QuerySet в список
-
-        # Извлекаем идентификаторы постов
         post_ids = [post.id for post in posts]
 
-        # Выполняем запрос для получения количества комментариев для всех постов
         comments_counts = (
             Post.objects
             .filter(id__in=post_ids)
@@ -32,10 +29,8 @@ class PostQuerySet(models.QuerySet):
             .values('id', 'comments_count')
         )
 
-        # Создаем словарь для быстрого доступа к количествам комментариев по ID
         count_for_id = {item['id']: item['comments_count'] for item in comments_counts}
 
-        # Добавляем информацию о комментариях к каждому посту
         for post in posts:
             post.comments_count = count_for_id.get(post.id, 0)
 
