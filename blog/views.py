@@ -5,15 +5,6 @@ import logging
 
 
 logger = logging.getLogger(__name__)
-
-
-def serialize_tag_with_posts_count(tag):
-    return {
-        'title': tag.title,
-        'posts_with_tag': getattr(tag, 'posts_count', 0)
-    }
-
-
 def serialize_tag(tag):
     logger.debug(f"Serializing tag: {tag.title}, posts_count: {getattr(tag, 'posts_count', 'N/A')}")
     return {
@@ -31,7 +22,7 @@ def serialize_post(post):
         'image_url': post.image.url if post.image else None,
         'published_at': post.published_at,
         'slug': post.slug,
-        'tags': [serialize_tag_with_posts_count(tag) for tag in getattr(post, 'annotated_tags', [])],
+        'tags': [serialize_tag(tag) for tag in getattr(post, 'annotated_tags', [])], #
         'first_tag_title': getattr(post, 'annotated_tags', [])[0].title if getattr(post, 'annotated_tags', []) else None,
     }
 
