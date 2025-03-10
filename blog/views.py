@@ -4,6 +4,7 @@ from django.db.models import Count, Prefetch
 import logging
 
 
+
 logger = logging.getLogger(__name__)
 def serialize_tag(tag):
     logger.debug(f"Serializing tag: {tag.title}, posts_count: {getattr(tag, 'posts_count', 'N/A')}")
@@ -40,13 +41,7 @@ def index(request):
     most_fresh_posts = (
         Post.objects.fresh()
         .select_related('author')
-        .prefetch_related(
-            Prefetch(
-                'tags',
-                queryset=Tag.objects.annotate(posts_count=Count('posts')),
-                to_attr='annotated_tags'
-            ),
-        )
+        .prefetch_related(Tag.objects.prefetch_with_post_count())
         .annotate(comments_count=Count('comments', distinct=False))[:5]
     )
 

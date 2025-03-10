@@ -44,13 +44,12 @@ class TagQuerySet(models.QuerySet):
         return self.annotate(posts_count=Count('posts')).order_by('-posts_count')[:5]
 
     def prefetch_with_post_count(self):
-        return self.prefetch_related(
-            Prefetch(
+        return Prefetch(
                 'tags',
-                queryset=Tag.objects.annotate(posts_count=Count('posts'),
-                to_attr='annotated_tags',                         )
+                queryset=Tag.objects.annotate(posts_count=Count('posts')),
+                to_attr='annotated_tags',
             )
-        )
+
 
 
 class Post(models.Model):
