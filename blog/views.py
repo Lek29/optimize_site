@@ -14,14 +14,6 @@ def serialize_tag_with_posts_count(tag):
     }
 
 
-def get_related_posts_count(tag):
-    return tag.posts.count()
-
-
-def get_like_count(post):
-    return post.like_count
-
-
 def serialize_tag(tag):
     logger.debug(f"Serializing tag: {tag.title}, posts_count: {getattr(tag, 'posts_count', 'N/A')}")
     return {
