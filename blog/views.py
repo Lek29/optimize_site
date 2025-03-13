@@ -1,4 +1,4 @@
-from django.shortcuts import render
+from django.shortcuts import render, get_object_or_404
 from blog.models import Comment, Post, Tag
 from django.db.models import Count, Prefetch
 import logging
@@ -55,7 +55,7 @@ def index(request):
     return render(request, 'index.html', context)
 
 def post_detail(request, slug):
-    post = Post.objects.select_related('author').get(slug=slug)
+    post = get_object_or_404(Post.objects.select_related('author').get(slug=slug))
 
     comments = Comment.objects.filter(post=post).select_related('author')
 
