@@ -55,7 +55,7 @@ def index(request):
     return render(request, 'index.html', context)
 
 def post_detail(request, slug):
-    post = get_object_or_404(Post.objects.select_related('author').get(slug=slug))
+    post = get_object_or_404(Post.objects.select_related('author'), slug=slug)
 
     comments = Comment.objects.filter(post=post).select_related('author')
 
@@ -108,7 +108,7 @@ def post_detail(request, slug):
     return render(request, 'post-details.html', context)
 
 def tag_filter(request, tag_title):
-    tag = Tag.objects.annotate(posts_count=Count('posts')).filter(title=tag_title).first()
+    tag = get_object_or_404(Tag.objects.annotate(posts_count=Count('posts')), title=tag_title)
 
     if tag is None:
         logger.error(f"Tag with title '{tag_title}' not found.")
