@@ -4,8 +4,8 @@ from django.db.models import Count, Prefetch
 import logging
 
 
-
 logger = logging.getLogger(__name__)
+
 def serialize_tag(tag):
     logger.debug(f"Serializing tag: {tag.title}, posts_count: {getattr(tag, 'posts_count', 'N/A')}")
     return {
@@ -37,7 +37,6 @@ def index(request):
         .prefetch_related('tags')
         .fetch_with_comments_count()[:5]
     )
-
     most_fresh_posts = (
         Post.objects.fresh()
         .select_related('author')
@@ -58,21 +57,27 @@ def post_detail(request, slug):
     post = get_object_or_404(
         Post.objects
         .select_related('author')
-        .annotate(likes_amount=Count('likes')),
+        .annotate(likes_amount=Count('likes'), comments_count=Count('comments')),
         slug=slug
     )
-
     comments = post.comments.select_related('author')
+    related_tags = post.tags.annotate(posts_count=Count('posts'))
 
-    serialized_comments = []
-    for comment in comments:
-        serialized_comments.append({
+    # serialized_comments = []
+    # for comment in comments:
+    #     serialized_comments.append({
+    #         'text': comment.text,
+    #         'published_at': comment.published_at,
+    #         'author': comment.author.username,
+    #     })
+    serialized_comments = [
+        {
             'text': comment.text,
             'published_at': comment.published_at,
             'author': comment.author.username,
-        })
-
-    related_tags = post.tags.annotate(posts_count=Count('posts')).all()
+        }
+        for comment in comments
+    ]
 
     serialized_post = {
         'title': post.title,
@@ -87,11 +92,12 @@ def post_detail(request, slug):
     }
 
     most_popular_tags = Tag.objects.annotate(posts_count=Count('posts')).popular()
-
     popular_posts_with_likes = (
-        Post.objects.annotate(like_count=Count('likes', distinct=False))
+        Post.objects
+        .annotate(like_count=Count('likes', distinct=False))
         .order_by('-like_count')[:5]
     )
+
 
     post_ids = [post.id for post in popular_posts_with_likes]
     posts_with_comments = (
