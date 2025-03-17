@@ -1,13 +1,9 @@
 from django.shortcuts import render, get_object_or_404
 from blog.models import Comment, Post, Tag
 from django.db.models import Count, Prefetch
-import logging
 
-
-logger = logging.getLogger(__name__)
 
 def serialize_tag(tag):
-    logger.debug(f"Serializing tag: {tag.title}, posts_count: {getattr(tag, 'posts_count', 'N/A')}")
     return {
         'title': tag.title,
         'posts_with_tag': tag.posts_count,
@@ -65,6 +61,7 @@ def index(request):
     }
     return render(request, 'index.html', context)
 
+
 def post_detail(request, slug):
     post = get_object_or_404(
         Post.objects
@@ -113,14 +110,9 @@ def post_detail(request, slug):
     }
     return render(request, 'post-details.html', context)
 
+
 def tag_filter(request, tag_title):
     tag = get_object_or_404(Tag.objects.annotate(posts_count=Count('posts')), title=tag_title)
-
-    if tag is None:
-        logger.error(f"Tag with title '{tag_title}' not found.")
-        return render(request, '404.html', {})
-
-    logger.debug(f"Tag: {tag.title}, Posts count: {getattr(tag, 'posts_count', 'N/A')}")
 
     most_popular_tags = Tag.objects.popular()
     most_popular_posts_with_likes = (
@@ -152,6 +144,7 @@ def tag_filter(request, tag_title):
         ],
     }
     return render(request, 'posts-list.html', context)
+
 
 def contacts(request):
     # позже здесь будет код для статистики заходов на эту страницу
