@@ -19,9 +19,10 @@ def serialize_post(post):
         'image_url': post.image.url if post.image else None,
         'published_at': post.published_at,
         'slug': post.slug,
-        'tags': [serialize_tag(tag) for tag in getattr(post, 'annotated_tags', [])], #
-        'first_tag_title': getattr(post, 'annotated_tags', [])[0].title if getattr(post, 'annotated_tags', []) else None,
+        'tags': [serialize_tag(tag) for tag in getattr(post, 'annotated_tags', [])],
+        'first_tag_title': post.tags.first().title if post.tags.exists() else None,
     }
+
 
 
 def add_comments_count(posts):
