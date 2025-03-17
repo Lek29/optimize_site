@@ -28,6 +28,18 @@ def serialize_post(post):
     }
 
 
+def add_comments_count(posts):
+    post_ids = [post.id for post in posts]
+    posts_with_comments = (
+        Post.objects.filter(id__in=post_ids)
+        .annotate(comments_count=Count('comments', distinct=False))
+    )
+    comments_count_map = {post.id: post.comments_count for post in posts_with_comments}
+    for post in posts:
+        post.comments_count = comments_count_map.get(post.id, 0)
+    return posts
+
+
 def index(request):
     most_popular_tags = Tag.objects.popular()
 
@@ -63,13 +75,6 @@ def post_detail(request, slug):
     comments = post.comments.select_related('author')
     related_tags = post.tags.annotate(posts_count=Count('posts'))
 
-    # serialized_comments = []
-    # for comment in comments:
-    #     serialized_comments.append({
-    #         'text': comment.text,
-    #         'published_at': comment.published_at,
-    #         'author': comment.author.username,
-    #     })
     serialized_comments = [
         {
             'text': comment.text,
@@ -98,17 +103,7 @@ def post_detail(request, slug):
         .order_by('-like_count')[:5]
     )
 
-
-    post_ids = [post.id for post in popular_posts_with_likes]
-    posts_with_comments = (
-        Post.objects.filter(id__in=post_ids)
-        .annotate(comments_count=Count('comments', distinct=False))
-    )
-
-    comments_count_map = {post.id: post.comments_count for post in posts_with_comments}
-    for post in popular_posts_with_likes:
-        post.comments_count = comments_count_map.get(post.id, 0)
-
+    popular_posts_with_likes =  add_comments_count(popular_posts_with_likes)
     context = {
         'post': serialized_post,
         'popular_tags': [serialize_tag(tag) for tag in most_popular_tags],
@@ -132,15 +127,8 @@ def tag_filter(request, tag_title):
         Post.objects.annotate(like_count=Count('likes', distinct=False))
         .order_by('-like_count')[:5]
     )
-    post_ids = [post.id for post in most_popular_posts_with_likes]
-    posts_with_comments = (
-        Post.objects.filter(id__in=post_ids)
-        .annotate(comments_count=Count('comments', distinct=False))
-    )
-    comments_count_map = {post.id: post.comments_count for post in posts_with_comments}
 
-    for post in most_popular_posts_with_likes:
-        post.comments_count = comments_count_map.get(post.id, 0)
+    most_popular_posts_with_likes = add_comments_count(most_popular_posts_with_likes)
 
     related_posts = (
         tag.posts
